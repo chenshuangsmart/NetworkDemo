@@ -16,6 +16,14 @@
 @property(nonatomic, strong)UIImageView *imgView;
 /** uila */
 @property(nonatomic, strong)UILabel *progressLbe;
+/** float*/
+@property(nonatomic,assign)NSUInteger currentLength;
+/** file*/
+@property(nonatomic,assign)long fileLength;
+/** file handler*/
+@property(nonatomic,strong)NSFileHandle *fileHandle;
+/** manager*/
+@property(nonatomic,strong)AFURLSessionManager *manager;
 @end
 
 @implementation ViewController
@@ -113,6 +121,39 @@
     
     // 5.开启下载任务
     [downloadTask resume];
+}
+
+// 下载任务执行块
+- (void)dataTaskWithRequest {
+    // 下载地址
+    NSURL *url = [NSURL URLWithString:@"http://dldir1.qq.com/qqfile/QQforMac/QQ_V5.4.0.dmg"];
+    // 创建request请求
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+    // 设置HTTP请求头中的Range
+    NSString *range = [NSString stringWithFormat:@"bytes=%zd-", self.currentLength];
+    [request setValue:range forHTTPHeaderField:@"Range"];
+    
+    // 开始下载任务
+    __weak typeof(self) weakSelf = self;
+    NSURLSessionDataTask *downloadTask = [self.manager dataTaskWithRequest:request completionHandler:^(NSURLResponse *response, id responseObject, NSError *error) {
+        // 下载完成
+        // 清空长度
+        weakSelf.currentLength = 0;
+        weakSelf.fileLength = 0;
+        
+        // 关闭fileHandle
+        [weakSelf.fileHandle closeFile];
+        weakSelf.fileHandle = nil;
+    }];
+}
+
+#pragma mark - lazy
+
+- (AFURLSessionManager *)manager {
+    if (_manager == nil) {
+        _manager = [[AFURLSessionManager alloc] initWithSessionConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
+    }
+    return _manager;
 }
 
 
